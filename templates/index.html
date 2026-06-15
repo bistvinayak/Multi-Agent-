@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Research AI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f0f0f;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #4f9eff;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 40px;
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        input {
+            flex: 1;
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 2px solid #333;
+            background: #1a1a1a;
+            color: white;
+            font-size: 1em;
+            outline: none;
+        }
+        input:focus { border-color: #4f9eff; }
+        button {
+            padding: 15px 30px;
+            border-radius: 10px;
+            border: none;
+            background: #4f9eff;
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background: #3d8ae0; }
+        button:disabled { background: #333; cursor: not-allowed; }
+        .progress-box {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+            border: 1px solid #333;
+        }
+        .progress-box h3 {
+            color: #4f9eff;
+            margin-bottom: 15px;
+        }
+        .log-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #222;
+            color: #aaa;
+            font-size: 0.9em;
+        }
+        .log-item:last-child { border-bottom: none; }
+        .log-item::before {
+            content: "📌 ";
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #333;
+            border-top: 3px solid #4f9eff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .report-box {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 30px;
+            display: none;
+            border: 1px solid #333;
+            line-height: 1.8;
+        }
+        .report-box h2 {
+            color: #4f9eff;
+            margin-bottom: 20px;
+        }
+        .report-content {
+            white-space: pre-wrap;
+            color: #ddd;
+        }
+        .status {
+            text-align: center;
+            color: #4f9eff;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            display: none;
+        }
+        .copy-btn {
+            margin-top: 20px;
+            background: #333;
+            padding: 10px 20px;
+            font-size: 0.9em;
+        }
+        .copy-btn:hover { background: #444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Deep Research AI</h1>
+        <p class="subtitle">Powered by Gemini + Tavily Web Search</p>
+
+        <div class="search-box">
+            <input
+                type="text"
+                id="topicInput"
+                placeholder="Enter a research topic (e.g. History of Cricket in India)"
+                onkeypress="handleKey(event)"
+            />
+            <button id="researchBtn" onclick="startResearch()">Research</button>
+        </div>
+
+        <div class="status" id="status">
+            <span class="spinner"></span>
+            <span id="statusText">Researching...</span>
+        </div>
+
+        <div class="progress-box" id="progressBox">
+            <h3>📊 Progress</h3>
+            <div id="progressLogs"></div>
+        </div>
+
+        <div class="report-box" id="reportBox">
+            <h2>📄 Research Report</h2>
+            <div class="report-content" id="reportContent"></div>
+            <button class="copy-btn" onclick="copyReport()">📋 Copy Report</button>
+        </div>
+    </div>
+
+    <script>
+        function handleKey(event) {
+            if (event.key === "Enter") startResearch();
+        }
+
+        async function startResearch() {
+            const topic = document.getElementById("topicInput").value.trim();
+            if (!topic) {
+                alert("Please enter a research topic!");
+                return;
+            }
+
+            const btn = document.getElementById("researchBtn");
+            const status = document.getElementById("status");
+            const statusText = document.getElementById("statusText");
+            const progressBox = document.getElementById("progressBox");
+            const progressLogs = document.getElementById("progressLogs");
+            const reportBox = document.getElementById("reportBox");
+
+            btn.disabled = true;
+            btn.textContent = "Researching...";
+            status.style.display = "block";
+            statusText.textContent = "Starting research...";
+            progressBox.style.display = "block";
+            reportBox.style.display = "none";
+            progressLogs.innerHTML = "";
+
+            try {
+                const response = await fetch("/research", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ topic: topic })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert("Error: " + data.error);
+                    return;
+                }
+
+                data.logs.forEach(log => {
+                    const div = document.createElement("div");
+                    div.className = "log-item";
+                    div.textContent = log;
+                    progressLogs.appendChild(div);
+                });
+
+                statusText.textContent = "Research complete!";
+                document.getElementById("reportContent").textContent = data.report;
+                reportBox.style.display = "block";
+
+            } catch (error) {
+                alert("Something went wrong: " + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Research";
+                setTimeout(() => { status.style.display = "none"; }, 2000);
+            }
+        }
+
+        function copyReport() {
+            const report = document.getElementById("reportContent").textContent;
+            navigator.clipboard.writeText(report);
+            alert("Report copied to clipboard!");
+        }
+    </script>
+</body>
+</html>
+
+

@@ -1,161 +1,416 @@
-import asyncio
-import os
-from dotenv import load_dotenv
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Research AI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0d1117;
+            color: #e6edf3;
+            min-height: 100vh;
+        }
+        .header {
+            background: #161b22;
+            padding: 15px 40px;
+            border-bottom: 1px solid #21262d;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo { font-size: 1.4em; font-weight: bold; color: #58a6ff; }
+        .badge {
+            background: #238636;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+        }
+        .main { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+        .hero { text-align: center; margin-bottom: 40px; }
+        .hero h1 {
+            font-size: 2.8em;
+            background: linear-gradient(90deg, #58a6ff, #bc8cff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .hero p { color: #8b949e; font-size: 1.1em; }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 25px;
+            background: #161b22;
+            padding: 5px;
+            border-radius: 12px;
+            border: 1px solid #21262d;
+        }
+        .tab {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: all 0.3s;
+            background: transparent;
+            color: #8b949e;
+        }
+        .tab.active {
+            background: linear-gradient(135deg, #1f6feb, #388bfd);
+            color: white;
+        }
+        .tab:hover:not(.active) { background: #21262d; color: #e6edf3; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        input {
+            flex: 1;
+            padding: 14px 18px;
+            border-radius: 10px;
+            border: 1px solid #21262d;
+            background: #161b22;
+            color: #e6edf3;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        input:focus { border-color: #58a6ff; }
+        .btn {
+            padding: 14px 24px;
+            border-radius: 10px;
+            border: none;
+            font-size: 1em;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #1f6feb, #388bfd);
+            color: white;
+        }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-green {
+            background: linear-gradient(135deg, #238636, #2ea043);
+            color: white;
+            width: 100%;
+            padding: 16px;
+            font-size: 1.1em;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .btn-green:hover { opacity: 0.9; }
+        .btn-green:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-red {
+            background: linear-gradient(135deg, #da3633, #f85149);
+            color: white;
+            padding: 10px 18px;
+            font-size: 0.9em;
+            border-radius: 8px;
+        }
+        .btn-gray {
+            background: #21262d;
+            color: #e6edf3;
+            padding: 10px 18px;
+            font-size: 0.9em;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+        }
+        .progress-box {
+            background: #161b22;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+            border: 1px solid #21262d;
+        }
+        .progress-title {
+            color: #58a6ff;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .progress-logs { max-height: 180px; overflow-y: auto; }
+        .log-item {
+            padding: 7px 12px;
+            margin-bottom: 4px;
+            background: #0d1117;
+            border-radius: 6px;
+            color: #8b949e;
+            font-size: 0.85em;
+            border-left: 3px solid #58a6ff;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-8px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .report-box {
+            background: #161b22;
+            border-radius: 12px;
+            padding: 25px;
+            display: none;
+            border: 1px solid #21262d;
+        }
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #21262d;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .report-title { color: #58a6ff; font-size: 1.2em; font-weight: 600; }
+        .report-actions { display: flex; gap: 8px; }
+        .report-content {
+            white-space: pre-wrap;
+            color: #e6edf3;
+            line-height: 1.8;
+            font-size: 0.95em;
+        }
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #21262d;
+            border-top: 2px solid #58a6ff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status-bar {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            color: #58a6ff;
+            margin-bottom: 15px;
+            font-size: 0.95em;
+        }
+        .stock-info {
+            background: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: #8b949e;
+            font-size: 0.9em;
+        }
+        .stock-info h3 { color: #2ea043; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🔬 Deep Research AI</div>
+        <div class="badge">Powered by Gemini</div>
+    </div>
 
-load_dotenv()
-gemini_api_key = os.getenv("GEMINI_API_KEY")
-tavily_api_key = os.getenv("TAVILY_API_KEY")
+    <div class="main">
+        <div class="hero">
+            <h1>Research Anything</h1>
+            <p>Multi-agent AI research powered by Gemini + Tavily Web Search</p>
+        </div>
 
-from llama_index.llms.google_genai import GoogleGenAI
-llm = GoogleGenAI(model="gemini-2.5-flash", api_key=gemini_api_key)
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('research')">🔍 Deep Research</button>
+            <button class="tab" onclick="switchTab('stocks')">📈 Stock Research</button>
+        </div>
 
-from tavily import AsyncTavilyClient
+        <!-- Research Panel -->
+        <div class="panel active" id="research-panel">
+            <div class="search-box">
+                <input type="text" id="topicInput"
+                    placeholder="Enter any research topic..."
+                    onkeypress="if(event.key==='Enter') startResearch()"/>
+                <button class="btn btn-primary" id="researchBtn" onclick="startResearch()">
+                    Research
+                </button>
+            </div>
 
-async def search_web(query: str) -> str:
-    """Useful for using the web to answer questions."""
-    client = AsyncTavilyClient(api_key=tavily_api_key)
-    return str(await client.search(query))
+            <div class="status-bar" id="statusBar">
+                <div class="spinner"></div>
+                <span id="statusText">Researching...</span>
+            </div>
 
-from llama_index.core.workflow import Event
+            <div class="progress-box" id="progressBox">
+                <div class="progress-title">📊 Live Progress</div>
+                <div class="progress-logs" id="progressLogs"></div>
+            </div>
 
-class GenerateEvent(Event):
-    research_topic: str
+            <div class="report-box" id="reportBox">
+                <div class="report-header">
+                    <div class="report-title">📄 Research Report</div>
+                    <div class="report-actions">
+                        <button class="btn btn-red" onclick="downloadPDF()">📥 Download PDF</button>
+                        <button class="btn btn-gray" onclick="copyReport()">📋 Copy</button>
+                    </div>
+                </div>
+                <div class="report-content" id="reportContent"></div>
+            </div>
+        </div>
 
-class QuestionEvent(Event):
-    question: str
+        <!-- Stock Panel -->
+        <div class="panel" id="stocks-panel">
+            <div class="stock-info">
+                <h3>📈 AI Stock Analyst</h3>
+                <p>Get AI-powered analysis of top Indian stocks to watch tomorrow based on latest news and market trends. <strong>Not financial advice.</strong></p>
+            </div>
 
-class AnswerEvent(Event):
-    question: str
-    answer: str
+            <button class="btn btn-green" id="stockBtn" onclick="getStockResearch()">
+                🔍 Analyze Top Stocks for Tomorrow
+            </button>
 
-class ProgressEvent(Event):
-    msg: str
+            <div class="status-bar" id="stockStatusBar">
+                <div class="spinner"></div>
+                <span>Analyzing stock market...</span>
+            </div>
 
-class FeedbackEvent(Event):
-    research_topic: str
-    feedback: str
+            <div class="report-box" id="stockReportBox">
+                <div class="report-header">
+                    <div class="report-title">📈 Stock Analysis Report</div>
+                    <div class="report-actions">
+                        <button class="btn btn-red" onclick="downloadStockPDF()">📥 Download PDF</button>
+                        <button class="btn btn-gray" onclick="copyStockReport()">📋 Copy</button>
+                    </div>
+                </div>
+                <div class="report-content" id="stockReportContent"></div>
+            </div>
+        </div>
+    </div>
 
-class ReviewEvent(Event):
-    report: str
+    <script>
+        let currentReport = "";
+        let currentStockReport = "";
 
-from llama_index.core.agent.workflow import FunctionAgent
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tab + '-panel').classList.add('active');
+        }
 
-question_agent = FunctionAgent(
-    tools=[],
-    llm=llm,
-    verbose=False,
-    system_prompt="Generate questions on the given topic one per line. No markdown."
-)
+        function addLog(msg) {
+            const logs = document.getElementById("progressLogs");
+            const div = document.createElement("div");
+            div.className = "log-item";
+            div.textContent = "📌 " + msg;
+            logs.appendChild(div);
+            logs.scrollTop = logs.scrollHeight;
+        }
 
-answer_agent = FunctionAgent(
-    tools=[search_web],
-    llm=llm,
-    verbose=False,
-    system_prompt="Answer the given question using web search. Return just the answer."
-)
+        async function startResearch() {
+            const topic = document.getElementById("topicInput").value.trim();
+            if (!topic) { alert("Please enter a research topic!"); return; }
 
-report_agent = FunctionAgent(
-    tools=[],
-    llm=llm,
-    verbose=False,
-    system_prompt="Combine all answers into a comprehensive well structured report."
-)
+            const btn = document.getElementById("researchBtn");
+            const statusBar = document.getElementById("statusBar");
+            const progressBox = document.getElementById("progressBox");
+            const reportBox = document.getElementById("reportBox");
+            const progressLogs = document.getElementById("progressLogs");
 
-review_agent = FunctionAgent(
-    tools=[],
-    llm=llm,
-    verbose=False,
-    system_prompt="Review the report. If good respond with just ACCEPTABLE. Otherwise suggest more questions."
-)
+            btn.disabled = true;
+            btn.textContent = "Researching...";
+            statusBar.style.display = "flex";
+            progressBox.style.display = "block";
+            reportBox.style.display = "none";
+            progressLogs.innerHTML = "";
 
-from llama_index.core.workflow import StartEvent, StopEvent, Workflow, step, Context
+            try {
+                const response = await fetch("/research", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ topic })
+                });
+                const data = await response.json();
+                if (data.error) { alert("Error: " + data.error); return; }
+                data.logs.forEach(log => addLog(log));
+                currentReport = data.report;
+                document.getElementById("reportContent").textContent = data.report;
+                reportBox.style.display = "block";
+            } catch (e) {
+                alert("Error: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Research";
+                statusBar.style.display = "none";
+            }
+        }
 
-class DeepResearchWorkflow(Workflow):
+        async function getStockResearch() {
+            const btn = document.getElementById("stockBtn");
+            const statusBar = document.getElementById("stockStatusBar");
+            const reportBox = document.getElementById("stockReportBox");
 
-    @step
-    async def setup(self, ctx: Context, ev: StartEvent) -> GenerateEvent:
-        self.question_agent = ev.question_agent
-        self.answer_agent = ev.answer_agent
-        self.report_agent = ev.report_agent
-        self.review_agent = ev.review_agent
-        self.review_cycles = 0
-        self.research_topic = ev.research_topic
-        self.total_questions = 0
-        ctx.write_event_to_stream(ProgressEvent(msg="Starting research..."))
-        return GenerateEvent(research_topic=ev.research_topic)
+            btn.disabled = true;
+            btn.textContent = "Analyzing...";
+            statusBar.style.display = "flex";
+            reportBox.style.display = "none";
 
-    @step
-    async def generate_questions(self, ctx: Context, ev: GenerateEvent | FeedbackEvent) -> QuestionEvent:
-        ctx.write_event_to_stream(ProgressEvent(msg=f"Topic: {ev.research_topic}"))
-        prompt = f"Generate questions on: {ev.research_topic}"
-        if isinstance(ev, FeedbackEvent):
-            prompt += f" Feedback: {ev.feedback}"
-        result = await self.question_agent.run(user_msg=prompt)
-        lines = str(result).split("\n")
-        questions = [line.strip() for line in lines if line.strip() != ""]
-        self.total_questions = len(questions)
-        ctx.write_event_to_stream(ProgressEvent(msg=f"Generated {len(questions)} questions"))
-        for question in questions:
-            ctx.send_event(QuestionEvent(question=question))
+            try {
+                const response = await fetch("/stock-research");
+                const data = await response.json();
+                if (data.error) { alert("Error: " + data.error); return; }
+                currentStockReport = data.report;
+                document.getElementById("stockReportContent").textContent = data.report;
+                reportBox.style.display = "block";
+            } catch (e) {
+                alert("Error: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "🔍 Analyze Top Stocks for Tomorrow";
+                statusBar.style.display = "none";
+            }
+        }
 
-    @step
-    async def answer_question(self, ctx: Context, ev: QuestionEvent) -> AnswerEvent:
-        ctx.write_event_to_stream(ProgressEvent(msg=f"Answering: {ev.question}"))
-        result = await self.answer_agent.run(user_msg=f"Answer this: {ev.question}")
-        ctx.write_event_to_stream(ProgressEvent(msg=f"Answered: {ev.question}"))
-        return AnswerEvent(question=ev.question, answer=str(result))
+        async function downloadPDF() {
+            if (!currentReport) { alert("No report yet!"); return; }
+            const response = await fetch("/download-pdf", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ report: currentReport })
+            });
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "research_report.pdf";
+            a.click();
+        }
 
-    @step
-    async def write_report(self, ctx: Context, ev: AnswerEvent) -> ReviewEvent:
-        research = ctx.collect_events(ev, [AnswerEvent] * self.total_questions)
-        if research is None:
-            ctx.write_event_to_stream(ProgressEvent(msg="Collecting answers..."))
-            return None
-        ctx.write_event_to_stream(ProgressEvent(msg="Writing report..."))
-        all_answers = ""
-        for q_and_a in research:
-            all_answers += f"Q: {q_and_a.question}\nA: {q_and_a.answer}\n\n"
-        result = await self.report_agent.run(
-            user_msg=f"Write report on: {self.research_topic}\n\n{all_answers}"
-        )
-        return ReviewEvent(report=str(result))
+        async function downloadStockPDF() {
+            if (!currentStockReport) { alert("No report yet!"); return; }
+            const response = await fetch("/download-pdf", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ report: currentStockReport })
+            });
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "stock_report.pdf";
+            a.click();
+        }
 
-    @step
-    async def review(self, ctx: Context, ev: ReviewEvent) -> StopEvent | FeedbackEvent:
-        ctx.write_event_to_stream(ProgressEvent(msg="Reviewing report..."))
-        result = await self.review_agent.run(
-            user_msg=f"Review report on: {self.research_topic}\n\n{ev.report}"
-        )
-        self.review_cycles += 1
-        if str(result).strip() == "ACCEPTABLE" or self.review_cycles >= 3:
-            ctx.write_event_to_stream(ProgressEvent(msg=f"Done after {self.review_cycles} cycles!"))
-            return StopEvent(result=ev.report)
-        else:
-            ctx.write_event_to_stream(ProgressEvent(msg="Needs more research..."))
-            return FeedbackEvent(research_topic=self.research_topic, feedback=str(result))
+        function copyReport() {
+            navigator.clipboard.writeText(currentReport);
+            alert("Copied!");
+        }
 
-async def main():
-    print("\n Starting Deep Research Workflow with Gemini...\n")
-    workflow = DeepResearchWorkflow(timeout=300)
-    handler = workflow.run(
-        research_topic="History of Cricket in India",
-        question_agent=question_agent,
-        answer_agent=answer_agent,
-        report_agent=report_agent,
-        review_agent=review_agent
-    )
-    async for ev in handler.stream_events():
-        if isinstance(ev, ProgressEvent):
-            print(f"-- {ev.msg}")
-    final_result = await handler
-    print("\n" + "="*50)
-    print("FINAL REPORT")
-    print("="*50 + "\n")
-    print(final_result)
-    with open("report.txt", "w") as f:
-        f.write(final_result)
-    print("\nReport saved to report.txt")
-
-if __name__ == "__main__":
-    asyncio.run(main())
-
+        function copyStockReport() {
+            navigator.clipboard.writeText(currentStockReport);
+            alert("Copied!");
+        }
+    </script>
+</body>
+</html>
